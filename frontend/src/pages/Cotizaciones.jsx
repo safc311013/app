@@ -35,7 +35,7 @@ function Cotizaciones() {
 
   const obtenerInventario = async () => {
     try {
-      const res = await fetchConToken("http://localhost:5000/api/productos");
+      const res = await fetchConToken("https://app-backend-s07g.onrender.com/api/productos");
       if (!res.ok) throw new Error("Error al obtener inventario");
       const data = await res.json();
       setInventario(data.map(p => ({ ...p, stockDisponible: p.stock })));

@@ -60,7 +60,7 @@ export default function Dashboard() {
   const obtenerVentasHoy = async () => {
     try {
       const res = await fetchConToken(
-        "http://localhost:5000/api/ventas/hoy"
+        "https://app-backend-s07g.onrender.com/api/ventas/hoy"
       );
 
       if (!res) return;

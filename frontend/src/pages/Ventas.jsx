@@ -43,7 +43,7 @@ export default function Ventas() {
 
   const obtenerVentas = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/ventas", {
+      const res = await fetch("https://app-backend-s07g.onrender.com/api/ventas", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -59,7 +59,7 @@ export default function Ventas() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/ventas/ticket/${busqueda}`,
+        `https://app-backend-s07g.onrender.com/api/ventas/ticket/${busqueda}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -77,7 +77,7 @@ export default function Ventas() {
 
   const filtrarPorFecha = async () => {
     try {
-      let url = "http://localhost:5000/api/ventas";
+      let url = "https://app-backend-s07g.onrender.com/api/ventas";
 
       if (fechaInicio && fechaFin) {
         url += `?inicio=${fechaInicio}&fin=${fechaFin}`;
@@ -103,7 +103,7 @@ export default function Ventas() {
   const abrirTicket = async (numeroTicket) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/ventas/ticket/${numeroTicket}`,
+        `https://app-backend-s07g.onrender.com/api/ventas/ticket/${numeroTicket}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

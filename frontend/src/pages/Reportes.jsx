@@ -4,7 +4,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-const API = "http://localhost:5000/api";
+const API = "https://app-backend-s07g.onrender.com/api";
 
 export default function Reportes() {
   const [fechaInicio, setFechaInicio] = useState("");

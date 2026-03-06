@@ -123,7 +123,7 @@ export default function PuntoDeVenta() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/ventas", {
+      const res = await fetch("https://app-backend-s07g.onrender.com/api/ventas", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

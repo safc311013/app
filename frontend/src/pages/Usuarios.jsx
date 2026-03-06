@@ -48,7 +48,7 @@ function Usuarios() {
     try {
       setLoading(true);
       setError("");
-      const res = await fetchConToken("http://localhost:5000/api/usuarios");
+      const res = await fetchConToken("https://app-backend-s07g.onrender.com/api/usuarios");
       if (!res) return;
       if (!res.ok) throw new Error((await res.json()).message || "Error al obtener usuarios");
       const data = await res.json();
@@ -69,7 +69,7 @@ function Usuarios() {
     }
     try {
       setLoading(true);
-      const res = await fetchConToken("http://localhost:5000/api/usuarios", {
+      const res = await fetchConToken("https://app-backend-s07g.onrender.com/api/usuarios", {
         method: "POST",
         body: JSON.stringify(nuevo),
       });
@@ -90,7 +90,7 @@ function Usuarios() {
       const payload = { ...editData };
       if (!payload.password) delete payload.password;
 
-      const res = await fetchConToken(`http://localhost:5000/api/usuarios/${id}`, {
+      const res = await fetchConToken(`https://app-backend-s07g.onrender.com/api/usuarios/${id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
@@ -111,7 +111,7 @@ function Usuarios() {
     if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
     if (id === usuarioLogueado._id) return setError("No puedes eliminar tu propio usuario.");
     try {
-      const res = await fetchConToken(`http://localhost:5000/api/usuarios/${id}`, { method: "DELETE" });
+      const res = await fetchConToken(`https://app-backend-s07g.onrender.com/api/usuarios/${id}`, { method: "DELETE" });
       if (!res) return;
       if (!res.ok) throw new Error((await res.json()).message || "Error al eliminar usuario");
       obtenerUsuarios();

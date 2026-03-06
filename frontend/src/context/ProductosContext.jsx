@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 
-const API = "http://localhost:5000/api"; // 🔥 AQUÍ ESTÁ EL CAMBIO
+const API = "https://app-backend-s07g.onrender.com/api"; // 🔥 AQUÍ ESTÁ EL CAMBIO
 
 export const ProductosContext = createContext();
 
