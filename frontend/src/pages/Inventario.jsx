@@ -1,7 +1,8 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Trash2, Save } from "lucide-react";
 import { ProductosContext } from "../context/ProductosContext";
+import { useRealtimeVersion } from "../context/RealtimeContext";
 
 export default function Inventario() {
   const { productos, agregarProducto, actualizarProducto, eliminarProducto } =
@@ -26,7 +27,12 @@ export default function Inventario() {
   const [busqueda, setBusqueda] = useState("");
   const [editados, setEditados] = useState({});
   const [productoAEliminar, setProductoAEliminar] = useState(null);
+const realtimeVersion = useRealtimeVersion();
 
+  useEffect(() => {
+    setEditados({});
+    setProductoAEliminar(null);
+  }, [realtimeVersion]);
   const categoriasUnicas = [
     "todas",
     ...new Set(productos.map((p) => p.categoria).filter(Boolean)),

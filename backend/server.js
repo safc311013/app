@@ -4,35 +4,68 @@ dotenv.config();
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
-
+import jwt from "jsonwebtoken";
 import Producto from "./models/Producto.js";
 import ventasRoutes from "./routes/Ventas.js";
 import authRoutes from "./routes/auth.js";
 import usuariosRoutes from "./routes/usuarios.js";
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-/* =========================
-   1️⃣ CORS
-========================= */
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://app-hilos.netlify.app"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+const allowedOrigins = ["http://localhost:5173", "https://app-hilos.netlify.app"];
+const sseClients = new Set();
 
-/* =========================
-   2️⃣ Middleware JSON
-========================= */
+const emitRealtimeChange = (resource) => {
+  const payload = `data: ${JSON.stringify({ resource, timestamp: Date.now() })}\n\n`;
+  sseClients.forEach((client) => client.write(payload));
+};
+
+app.locals.emitRealtimeChange = emitRealtimeChange;
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
+
+
 app.use(express.json());
 
-/* =========================
-   3️⃣ RUTAS
-========================= */
-// 👥 Usuarios
+app.get("/api/realtime/events", (req, res) => {
+  const token = req.query.token;
+
+  if (!token) {
+    return res.status(401).json({ message: "Token requerido" });
+  }
+
+  try {
+    jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    return res.status(401).json({ message: "Token inválido" });
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const heartbeat = setInterval(() => {
+    res.write(`: heartbeat ${Date.now()}\n\n`);
+  }, 25000);
+
+  res.write(`data: ${JSON.stringify({ resource: "init", timestamp: Date.now() })}\n\n`);
+  sseClients.add(res);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    sseClients.delete(res);
+  });
+});
+
 app.use("/api/usuarios", usuariosRoutes);
 // 🔐 Autenticación
 app.use("/api/auth", authRoutes);
@@ -54,6 +87,7 @@ app.post("/api/productos", async (req, res) => {
   try {
     const nuevoProducto = new Producto(req.body);
     const guardado = await nuevoProducto.save();
+    emitRealtimeChange("productos");
     res.json(guardado);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -62,11 +96,8 @@ app.post("/api/productos", async (req, res) => {
 
 app.put("/api/productos/:id", async (req, res) => {
   try {
-    const productoActualizado = await Producto.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    const productoActualizado = await Producto.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    emitRealtimeChange("productos");
     res.json(productoActualizado);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -76,6 +107,7 @@ app.put("/api/productos/:id", async (req, res) => {
 app.delete("/api/productos/:id", async (req, res) => {
   try {
     await Producto.findByIdAndDelete(req.params.id);
+    emitRealtimeChange("productos");
     res.json({ mensaje: "Producto eliminado" });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -103,11 +135,12 @@ app.get("/", (req, res) => {
 /* =========================
    4️⃣ CONEXIÓN MONGODB
 ========================= */
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("🟢 Conectado a MongoDB");
     app.listen(PORT, () => {
       console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
     });
   })
-  .catch(err => console.error("❌ Error MongoDB:", err));
+  .catch((err) => console.error("❌ Error MongoDB:", err));

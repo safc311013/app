@@ -44,6 +44,8 @@ router.post("/", verificarToken, adminOSupervisor, async (req, res) => {
     const usuarioSinPassword = nuevoUsuario.toObject();
     delete usuarioSinPassword.password;
 
+    req.app.locals.emitRealtimeChange?.("usuarios");
+
     res.status(201).json(usuarioSinPassword);
   } catch (error) {
     console.error("Error POST usuario:", error);
@@ -78,7 +80,7 @@ router.put("/:id", verificarToken, soloAdmin, async (req, res) => {
 
     const usuarioSinPassword = usuario.toObject();
     delete usuarioSinPassword.password;
-
+req.app.locals.emitRealtimeChange?.("usuarios");
     res.json(usuarioSinPassword);
   } catch (error) {
     console.error("Error PUT usuario:", error);
@@ -101,6 +103,7 @@ router.delete("/:id", verificarToken, soloAdmin, async (req, res) => {
     }
 
     await Usuario.findByIdAndDelete(req.params.id);
+    req.app.locals.emitRealtimeChange?.("usuarios");
     res.json({ message: "Usuario eliminado correctamente" });
   } catch (error) {
     console.error("Error DELETE usuario:", error);

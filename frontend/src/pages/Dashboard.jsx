@@ -1,10 +1,13 @@
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProductosContext } from "../context/ProductosContext";
+import { API_URL } from "../config/api";
+import { useRealtimeVersion } from "../context/RealtimeContext";
 
 export default function Dashboard() {
   const { productos } = useContext(ProductosContext);
   const navigate = useNavigate();
+    const realtimeVersion = useRealtimeVersion();
 
   const [ventasHoy, setVentasHoy] = useState([]);
   const [ingresoHoy, setIngresoHoy] = useState(0);
@@ -60,7 +63,7 @@ export default function Dashboard() {
   const obtenerVentasHoy = async () => {
     try {
       const res = await fetchConToken(
-        "https://app-backend-s07g.onrender.com/api/ventas/hoy"
+        `${API_URL}/ventas/hoy`
       );
 
       if (!res) return;
@@ -82,7 +85,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     obtenerVentasHoy();
-  }, []);
+  }, [realtimeVersion]);
 
   return (
     <div>
@@ -90,7 +93,7 @@ export default function Dashboard() {
         Dashboard
       </h2>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
         <div className="bg-white p-6 rounded-2xl shadow-md">
           <h3 className="text-gray-500">Productos Totales</h3>

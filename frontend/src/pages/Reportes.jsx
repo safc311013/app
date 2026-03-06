@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { API_URL } from "../config/api";
+import { useRealtimeVersion } from "../context/RealtimeContext";
 
-const API = "https://app-backend-s07g.onrender.com/api";
+const API = `${API_URL}`;
 
 export default function Reportes() {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [ventas, setVentas] = useState([]);
+    const realtimeVersion = useRealtimeVersion();
   const [resumen, setResumen] = useState({
     totalVentas: 0,
     totalIngreso: 0,
@@ -25,6 +28,11 @@ export default function Reportes() {
     return fechaFormateada.replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
+   useEffect(() => {
+    if (fechaInicio && fechaFin) {
+      generarReporte();
+    }
+  }, [realtimeVersion]);
   const generarReporte = async () => {
     if (!fechaInicio || !fechaFin) {
       alert("Selecciona ambas fechas");
@@ -140,7 +148,7 @@ export default function Reportes() {
     <div>
       <h2 className="text-3xl font-bold mb-6">Reportes</h2>
 
-      <div className="bg-white p-6 rounded-2xl shadow-md mb-6 flex gap-4 items-end">
+      <div className="bg-white p-6 rounded-2xl shadow-md mb-6 flex flex-col md:flex-row gap-4 md:items-end">
         <div>
           <label className="block text-sm text-gray-500">Fecha Inicio</label>
           <input
@@ -171,7 +179,7 @@ export default function Reportes() {
 
       {ventas.length > 0 && (
         <>
-          <div className="grid grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="bg-white p-4 rounded-xl shadow">
               <p className="text-gray-500">Ventas</p>
               <p className="text-xl font-bold">{resumen.totalVentas}</p>

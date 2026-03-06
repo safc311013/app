@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../config/api";
+import { useRealtimeVersion } from "../context/RealtimeContext";
 
 function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -13,11 +15,12 @@ function Usuarios() {
   const usuarioLogueado = JSON.parse(localStorage.getItem("usuario") || "null");
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
+  const realtimeVersion = useRealtimeVersion();
 
   useEffect(() => {
     if (!usuarioLogueado || !token) navigate("/login");
     obtenerUsuarios();
-  }, []);
+    }, [realtimeVersion]);
 
   useEffect(() => {
     const handleEsc = (e) => {
@@ -48,7 +51,7 @@ function Usuarios() {
     try {
       setLoading(true);
       setError("");
-      const res = await fetchConToken("https://app-backend-s07g.onrender.com/api/usuarios");
+      const res = await fetchConToken(`${API_URL}/usuarios`);
       if (!res) return;
       if (!res.ok) throw new Error((await res.json()).message || "Error al obtener usuarios");
       const data = await res.json();
@@ -69,7 +72,7 @@ function Usuarios() {
     }
     try {
       setLoading(true);
-      const res = await fetchConToken("https://app-backend-s07g.onrender.com/api/usuarios", {
+      const res = await fetchConToken(`${API_URL}/usuarios`, {
         method: "POST",
         body: JSON.stringify(nuevo),
       });
@@ -90,7 +93,7 @@ function Usuarios() {
       const payload = { ...editData };
       if (!payload.password) delete payload.password;
 
-      const res = await fetchConToken(`https://app-backend-s07g.onrender.com/api/usuarios/${id}`, {
+      const res = await fetchConToken(`${API_URL}/usuarios/${id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
@@ -111,7 +114,7 @@ function Usuarios() {
     if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
     if (id === usuarioLogueado._id) return setError("No puedes eliminar tu propio usuario.");
     try {
-      const res = await fetchConToken(`https://app-backend-s07g.onrender.com/api/usuarios/${id}`, { method: "DELETE" });
+      const res = await fetchConToken(`${API_URL}/usuarios/${id}`, { method: "DELETE" });
       if (!res) return;
       if (!res.ok) throw new Error((await res.json()).message || "Error al eliminar usuario");
       obtenerUsuarios();

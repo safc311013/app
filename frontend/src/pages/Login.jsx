@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../config/api";
 
 function Login({ setUsuario }) {
   const [email, setEmail] = useState("");
@@ -12,7 +13,7 @@ function Login({ setUsuario }) {
     setError("");
 
     try {
-      const response = await fetch("https://app-backend-s07g.onrender.com/api/auth/login", {
+       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

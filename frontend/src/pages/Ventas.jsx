@@ -11,6 +11,8 @@ import {
   FaCalendarAlt,
   FaFilter
 } from "react-icons/fa";
+import { API_URL } from "../config/api";
+import { useRealtimeVersion } from "../context/RealtimeContext";
 
 export default function Ventas() {
   const [ventas, setVentas] = useState([]);
@@ -21,10 +23,11 @@ export default function Ventas() {
   const [fechaFin, setFechaFin] = useState("");
 
   const token = localStorage.getItem("token");
+  const realtimeVersion = useRealtimeVersion();
 
   useEffect(() => {
     obtenerVentas();
-  }, []);
+  }, [realtimeVersion]);
 
   /* CERRAR MODAL CON ESC */
   useEffect(() => {
@@ -43,7 +46,7 @@ export default function Ventas() {
 
   const obtenerVentas = async () => {
     try {
-      const res = await fetch("https://app-backend-s07g.onrender.com/api/ventas", {
+      const res = await fetch(`${API_URL}/ventas`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -59,7 +62,7 @@ export default function Ventas() {
 
     try {
       const res = await fetch(
-        `https://app-backend-s07g.onrender.com/api/ventas/ticket/${busqueda}`,
+        `${API_URL}/ventas/ticket/${busqueda}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -77,7 +80,7 @@ export default function Ventas() {
 
   const filtrarPorFecha = async () => {
     try {
-      let url = "https://app-backend-s07g.onrender.com/api/ventas";
+       let url = `${API_URL}/ventas`;
 
       if (fechaInicio && fechaFin) {
         url += `?inicio=${fechaInicio}&fin=${fechaFin}`;
@@ -103,7 +106,7 @@ export default function Ventas() {
   const abrirTicket = async (numeroTicket) => {
     try {
       const res = await fetch(
-        `https://app-backend-s07g.onrender.com/api/ventas/ticket/${numeroTicket}`,
+        `${API_URL}/ventas/ticket/${numeroTicket}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

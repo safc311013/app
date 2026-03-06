@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { API_URL } from "../config/api";
+import { useRealtimeVersion } from "../context/RealtimeContext";
 
 function Cotizaciones() {
   const [productos, setProductos] = useState([]);
@@ -16,10 +18,11 @@ function Cotizaciones() {
   const descuentoRef = useRef(null);
 
   const token = localStorage.getItem("token");
+  const realtimeVersion = useRealtimeVersion();
 
   useEffect(() => {
     obtenerInventario();
-  }, []);
+   }, [realtimeVersion]);
 
   const fetchConToken = async (url, options = {}) => {
     const res = await fetch(url, {
@@ -35,7 +38,7 @@ function Cotizaciones() {
 
   const obtenerInventario = async () => {
     try {
-      const res = await fetchConToken("https://app-backend-s07g.onrender.com/api/productos");
+      const res = await fetchConToken(`${API_URL}/productos`);
       if (!res.ok) throw new Error("Error al obtener inventario");
       const data = await res.json();
       setInventario(data.map(p => ({ ...p, stockDisponible: p.stock })));

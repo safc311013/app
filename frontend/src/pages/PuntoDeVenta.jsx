@@ -1,6 +1,8 @@
 import { useState, useContext, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProductosContext } from "../context/ProductosContext";
+import { API_URL } from "../config/api";
+import { useRealtimeVersion } from "../context/RealtimeContext";
 
 export default function PuntoDeVenta() {
   const { productos, actualizarProducto } = useContext(ProductosContext);
@@ -12,7 +14,7 @@ export default function PuntoDeVenta() {
   const [metodoPago, setMetodoPago] = useState("Efectivo");
   const [usuario, setUsuario] = useState(null);
   const [sugerencias, setSugerencias] = useState([]);
-
+  const realtimeVersion = useRealtimeVersion();
   const codigoRef = useRef(null);
   const cantidadRef = useRef(null);
 
@@ -26,6 +28,18 @@ export default function PuntoDeVenta() {
       setUsuario(JSON.parse(usuarioGuardado));
     }
   }, [navigate]);
+
+  useEffect(() => {
+    setSugerencias([]);
+    setCarrito((prev) =>
+      prev.map((item) => {
+        const productoActualizado = productos.find((p) => p._id === item._id);
+        return productoActualizado
+          ? { ...item, stock: productoActualizado.stock, precioVenta: productoActualizado.precioVenta }
+          : item;
+      })
+    );
+  }, [realtimeVersion, productos]);
 
   const filtrarSugerencias = (texto) => {
     if (!texto) {
@@ -123,7 +137,7 @@ export default function PuntoDeVenta() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("https://app-backend-s07g.onrender.com/api/ventas", {
+      const res = await fetch(`${API_URL}/ventas`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,16 +1,19 @@
 import { createContext, useState, useEffect } from "react";
 
-const API = "https://app-backend-s07g.onrender.com/api"; // 🔥 AQUÍ ESTÁ EL CAMBIO
+import { API_URL } from "../config/api";
+import { useRealtimeVersion } from "./RealtimeContext";
 
 export const ProductosContext = createContext();
 
 export function ProductosProvider({ children }) {
   const [productos, setProductos] = useState([]);
+  const realtimeVersion = useRealtimeVersion();
+
 
   // Cargar productos
   const cargarProductos = async () => {
     try {
-      const res = await fetch(`${API}/productos`);
+      const res = await fetch(`${API_URL}/productos`);
       if (!res.ok) throw new Error("Error al obtener productos");
       const data = await res.json();
       setProductos(data);
@@ -21,11 +24,11 @@ export function ProductosProvider({ children }) {
 
   useEffect(() => {
     cargarProductos();
-  }, []);
+  }, [realtimeVersion]);
 
   const agregarProducto = async (nuevoProducto) => {
     try {
-      const res = await fetch(`${API}/productos`, {
+      const res = await fetch(`${API_URL}/productos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nuevoProducto),
@@ -33,7 +36,7 @@ export function ProductosProvider({ children }) {
 
       if (!res.ok) throw new Error("Error al agregar producto");
 
-      await cargarProductos();
+      
     } catch (error) {
       console.error(error);
     }
@@ -41,7 +44,7 @@ export function ProductosProvider({ children }) {
 
   const actualizarProducto = async (id, updatedData) => {
     try {
-      const res = await fetch(`${API}/productos/${id}`, {
+      const res = await fetch(`${API_URL}/productos/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),
@@ -49,7 +52,7 @@ export function ProductosProvider({ children }) {
 
       if (!res.ok) throw new Error("Error al actualizar producto");
 
-      await cargarProductos();
+      
     } catch (error) {
       console.error(error);
     }
@@ -57,7 +60,7 @@ export function ProductosProvider({ children }) {
 
   const eliminarProducto = async (id) => {
     try {
-      const res = await fetch(`${API}/productos/${id}`, {
+      const res = await fetch(`${API_URL}/productos/${id}`, {
         method: "DELETE",
       });
 

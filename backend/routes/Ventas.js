@@ -153,6 +153,8 @@ ${listaProductos}
     });
 
     await nuevaVenta.save();
+    req.app.locals.emitRealtimeChange?.("ventas");
+    req.app.locals.emitRealtimeChange?.("productos");
 
     res.status(201).json(nuevaVenta);
 
@@ -221,6 +223,36 @@ router.get("/ticket/:numero", verificarToken, adminOSupervisor, async (req, res)
 });
 
 /* =========================
+   VENTAS POR RANGO
+========================= */
+router.get("/rango", verificarToken, adminOSupervisor, async (req, res) => {
+  try {
+    const { inicio, fin } = req.query;
+
+    if (!inicio || !fin) {
+      return res.status(400).json({ message: "Debes enviar inicio y fin" });
+    }
+
+    const fechaInicio = new Date(inicio);
+    fechaInicio.setHours(0, 0, 0, 0);
+
+    const fechaFin = new Date(fin);
+    fechaFin.setHours(23, 59, 59, 999);
+
+    const ventas = await Venta.find({
+      createdAt: { $gte: fechaInicio, $lte: fechaFin },
+    })
+      .sort({ createdAt: -1 })
+      .populate("usuario", "nombre rol");
+
+    res.json(ventas);
+  } catch (error) {
+    res.status(500).json({ message: "Error al obtener ventas por rango" });
+  }
+});
+
+
+/* =========================
    VENTAS DE HOY
 ========================= */
 router.get("/hoy", verificarToken, adminOSupervisor, async (req, res) => {
@@ -260,3 +292,4 @@ router.get("/por-usuario/:id", verificarToken, adminOSupervisor, async (req, res
 });
 
 export default router;
+
