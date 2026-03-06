@@ -16,7 +16,10 @@ const PORT = process.env.PORT || 5000;
    1️⃣ CORS
 ========================= */
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: [
+    "http://localhost:5173",
+    "https://app-hilos.netlify.app"
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
