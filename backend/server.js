@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 
 import Producto from "./models/Producto.js";
-import ventasRoutes from "./routes/ventas.js";
+import ventasRoutes from "./routes/Ventas.js";
 import authRoutes from "./routes/auth.js";
 import usuariosRoutes from "./routes/usuarios.js";
 const app = express();
