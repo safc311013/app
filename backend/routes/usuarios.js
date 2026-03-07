@@ -8,19 +8,6 @@ const router = express.Router();
 /* =========================
    OBTENER USUARIOS (ADMIN O SUPERVISOR)
 ========================= */
-router.get("/", verificarToken, adminOSupervisor, async (req, res) => {
-  try {
-    const usuarios = await Usuario.find().select("-password");
-    res.json(usuarios);
-  } catch (error) {
-    console.error("Error GET usuarios:", error);
-    res.status(500).json({ message: "Error al obtener usuarios" });
-  }
-});
-
-/* =========================
-   CREAR USUARIO (ADMIN O SUPERVISOR)
-========================= */
 router.post("/", verificarToken, adminOSupervisor, async (req, res) => {
   try {
     let { nombre, email, password, rol } = req.body;
@@ -45,7 +32,6 @@ router.post("/", verificarToken, adminOSupervisor, async (req, res) => {
     delete usuarioSinPassword.password;
 
     req.app.locals.emitRealtimeChange?.("usuarios");
-
     res.status(201).json(usuarioSinPassword);
   } catch (error) {
     console.error("Error POST usuario:", error);
@@ -80,7 +66,8 @@ router.put("/:id", verificarToken, soloAdmin, async (req, res) => {
 
     const usuarioSinPassword = usuario.toObject();
     delete usuarioSinPassword.password;
-req.app.locals.emitRealtimeChange?.("usuarios");
+
+    req.app.locals.emitRealtimeChange?.("usuarios");
     res.json(usuarioSinPassword);
   } catch (error) {
     console.error("Error PUT usuario:", error);
