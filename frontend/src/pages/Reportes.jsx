@@ -12,7 +12,7 @@ export default function Reportes() {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [ventas, setVentas] = useState([]);
-    const realtimeVersion = useRealtimeVersion();
+  const realtimeVersion = useRealtimeVersion();
   const [resumen, setResumen] = useState({
     totalVentas: 0,
     totalIngreso: 0,
@@ -28,11 +28,12 @@ export default function Reportes() {
     return fechaFormateada.replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
-   useEffect(() => {
+  useEffect(() => {
     if (fechaInicio && fechaFin) {
       generarReporte();
     }
   }, [realtimeVersion]);
+
   const generarReporte = async () => {
     if (!fechaInicio || !fechaFin) {
       alert("Selecciona ambas fechas");

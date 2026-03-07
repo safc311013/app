@@ -20,7 +20,7 @@ function Usuarios() {
   useEffect(() => {
     if (!usuarioLogueado || !token) navigate("/login");
     obtenerUsuarios();
-    }, [realtimeVersion]);
+  }, [realtimeVersion]);
 
   useEffect(() => {
     const handleEsc = (e) => {
@@ -174,40 +174,40 @@ function Usuarios() {
                   </>
                 )}
               </div>
-              {/* BOTONES */}
-<div className="flex gap-2">
-  {u._id !== usuarioLogueado._id && (
-    <>
-      {isEditing ? (
-        <button
-          disabled={!hasChanges}
-          onClick={() => actualizarUsuario(u._id)}
-          className={`px-3 py-1 rounded text-white ${hasChanges ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"}`}
-        >
-          Guardar
-        </button>
-      ) : (
-        <button
-          onClick={() => {
-            setEditId(u._id);
-            setEditData({ nombre: u.nombre, email: u.email, rol: u.rol, password: "" });
-            setShowPassword(false);
-          }}
-          className="px-1 py-1 text-yellow-500 hover:text-yellow-700 rounded transition"
-          style={{ background: "none" }}
-        >
-          ✏️
-        </button>
-      )}
-      <button
-        onClick={() => eliminarUsuario(u._id)}
-        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
-      >
-        Eliminar
-      </button>
-    </>
-  )}
-</div>
+
+              <div className="flex gap-2">
+                {u._id !== usuarioLogueado._id && (
+                  <>
+                    {isEditing ? (
+                      <button
+                        disabled={!hasChanges}
+                        onClick={() => actualizarUsuario(u._id)}
+                        className={`px-3 py-1 rounded text-white ${hasChanges ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"}`}
+                      >
+                        Guardar
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setEditId(u._id);
+                          setEditData({ nombre: u.nombre, email: u.email, rol: u.rol, password: "" });
+                          setShowPassword(false);
+                        }}
+                        className="px-1 py-1 text-yellow-500 hover:text-yellow-700 rounded transition"
+                        style={{ background: "none" }}
+                      >
+                        ✏️
+                      </button>
+                    )}
+                    <button
+                      onClick={() => eliminarUsuario(u._id)}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+                    >
+                      Eliminar
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           );
         })}

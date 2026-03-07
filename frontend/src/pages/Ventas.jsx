@@ -80,7 +80,7 @@ export default function Ventas() {
 
   const filtrarPorFecha = async () => {
     try {
-       let url = `${API_URL}/ventas`;
+      let url = `${API_URL}/ventas`;
 
       if (fechaInicio && fechaFin) {
         url += `?inicio=${fechaInicio}&fin=${fechaFin}`;

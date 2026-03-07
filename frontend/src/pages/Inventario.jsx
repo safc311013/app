@@ -27,12 +27,13 @@ export default function Inventario() {
   const [busqueda, setBusqueda] = useState("");
   const [editados, setEditados] = useState({});
   const [productoAEliminar, setProductoAEliminar] = useState(null);
-const realtimeVersion = useRealtimeVersion();
+  const realtimeVersion = useRealtimeVersion();
 
   useEffect(() => {
     setEditados({});
     setProductoAEliminar(null);
   }, [realtimeVersion]);
+
   const categoriasUnicas = [
     "todas",
     ...new Set(productos.map((p) => p.categoria).filter(Boolean)),
@@ -268,18 +269,18 @@ const realtimeVersion = useRealtimeVersion();
                         handleInlineChange(p._id, "codigo", e.target.value)
                       }
                       onKeyDown={(e) => handleKeyDown(e, p._id)}
-                      className="border p-2 rounded-xl w-full"
+                      className="w-full bg-transparent outline-none"
                     />
                   </td>
 
                   <td className="px-4 py-3">
                     <input
-                      value={productoMostrado.categoria}
+                      value={productoMostrado.categoria || ""}
                       onChange={(e) =>
                         handleInlineChange(p._id, "categoria", e.target.value)
                       }
                       onKeyDown={(e) => handleKeyDown(e, p._id)}
-                      className="border p-2 rounded-xl w-full"
+                      className="w-full bg-transparent outline-none"
                     />
                   </td>
 
@@ -290,7 +291,7 @@ const realtimeVersion = useRealtimeVersion();
                         handleInlineChange(p._id, "nombre", e.target.value)
                       }
                       onKeyDown={(e) => handleKeyDown(e, p._id)}
-                      className="border p-2 rounded-xl w-full"
+                      className="w-full bg-transparent outline-none"
                     />
                   </td>
 
@@ -302,11 +303,11 @@ const realtimeVersion = useRealtimeVersion();
                         handleInlineChange(
                           p._id,
                           "precioArtesano",
-                          parseFloat(e.target.value)
+                          Number(e.target.value)
                         )
                       }
                       onKeyDown={(e) => handleKeyDown(e, p._id)}
-                      className="border p-2 rounded-xl w-24"
+                      className="w-full bg-transparent outline-none"
                     />
                   </td>
 
@@ -318,11 +319,11 @@ const realtimeVersion = useRealtimeVersion();
                         handleInlineChange(
                           p._id,
                           "precioVenta",
-                          parseFloat(e.target.value)
+                          Number(e.target.value)
                         )
                       }
                       onKeyDown={(e) => handleKeyDown(e, p._id)}
-                      className="border p-2 rounded-xl w-24"
+                      className="w-full bg-transparent outline-none"
                     />
                   </td>
 
@@ -334,42 +335,40 @@ const realtimeVersion = useRealtimeVersion();
                         handleInlineChange(
                           p._id,
                           "stock",
-                          parseInt(e.target.value)
+                          Number(e.target.value)
                         )
                       }
                       onKeyDown={(e) => handleKeyDown(e, p._id)}
-                      className={`border p-2 rounded-xl w-20 text-center font-semibold ${
-                        stockBajo ? "text-red-600" : "text-gray-800"
+                      className={`w-full bg-transparent outline-none font-semibold ${
+                        stockBajo ? "text-red-600" : ""
                       }`}
                     />
                   </td>
 
                   <td className="px-4 py-3">
                     <input
-                      value={productoMostrado.artesano}
+                      value={productoMostrado.artesano || ""}
                       onChange={(e) =>
                         handleInlineChange(p._id, "artesano", e.target.value)
                       }
                       onKeyDown={(e) => handleKeyDown(e, p._id)}
-                      className="border p-2 rounded-xl w-full"
+                      className="w-full bg-transparent outline-none"
                     />
                   </td>
 
                   <td className="px-4 py-3 flex gap-2">
-                    {editados[p._id] && (
-                      <button
-                        onClick={() => guardarCambios(p._id)}
-                        className="p-2 bg-blue-600 rounded-xl hover:bg-blue-700 transition shadow-sm"
-                      >
-                        <Save size={18} color="white" />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => guardarCambios(p._id)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-xs flex items-center gap-1"
+                    >
+                      <Save size={14} /> Guardar
+                    </button>
 
                     <button
-                      onClick={() => setProductoAEliminar(p)}
-                      className="p-2 bg-red-600 rounded-xl hover:bg-red-700 transition shadow-sm"
+                      onClick={() => setProductoAEliminar(p._id)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs flex items-center gap-1"
                     >
-                      <Trash2 size={18} color="white" />
+                      <Trash2 size={14} /> Eliminar
                     </button>
                   </td>
                 </tr>
@@ -379,35 +378,28 @@ const realtimeVersion = useRealtimeVersion();
         </table>
       </div>
 
+      {/* MODAL ELIMINAR */}
       {productoAEliminar && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-6 w-96 shadow-xl">
-            <h3 className="text-xl font-bold mb-4">
-              Confirmar eliminación
-            </h3>
-
-            <p className="mb-6">
-              ¿Seguro que deseas eliminar{" "}
-              <span className="font-semibold">
-                {productoAEliminar.nombre}
-              </span>
-              ?
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 shadow-xl w-[90%] max-w-sm">
+            <h3 className="text-lg font-bold mb-2">¿Eliminar producto?</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Esta acción no se puede deshacer.
             </p>
 
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setProductoAEliminar(null)}
-                className="px-4 py-2 rounded-xl bg-gray-200"
+                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100"
               >
                 Cancelar
               </button>
-
               <button
-                onClick={() => {
-                  eliminarProducto(productoAEliminar._id);
+                onClick={async () => {
+                  await eliminarProducto(productoAEliminar);
                   setProductoAEliminar(null);
                 }}
-                className="px-4 py-2 rounded-xl bg-red-600 text-white"
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
               >
                 Eliminar
               </button>

@@ -5,6 +5,7 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import jwt from "jsonwebtoken";
+
 import Producto from "./models/Producto.js";
 import ventasRoutes from "./routes/Ventas.js";
 import authRoutes from "./routes/auth.js";
@@ -12,7 +13,6 @@ import usuariosRoutes from "./routes/usuarios.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
 const allowedOrigins = ["http://localhost:5173", "https://app-hilos.netlify.app"];
 const sseClients = new Set();
 
@@ -30,8 +30,6 @@ app.use(
     credentials: true,
   })
 );
-
-
 
 app.use(express.json());
 
@@ -67,13 +65,9 @@ app.get("/api/realtime/events", (req, res) => {
 });
 
 app.use("/api/usuarios", usuariosRoutes);
-// 🔐 Autenticación
 app.use("/api/auth", authRoutes);
-
-// 💰 Ventas protegidas
 app.use("/api/ventas", ventasRoutes);
 
-// 📦 Productos
 app.get("/api/productos", async (req, res) => {
   try {
     const productos = await Producto.find();
@@ -114,7 +108,6 @@ app.delete("/api/productos/:id", async (req, res) => {
   }
 });
 
-// 🔔 Productos con stock bajo
 app.get("/api/productos/stock-bajo", async (req, res) => {
   try {
     const limite = 3;
@@ -125,16 +118,10 @@ app.get("/api/productos/stock-bajo", async (req, res) => {
   }
 });
 
-/* =========================
-   RUTA RAÍZ
-========================= */
 app.get("/", (req, res) => {
   res.send("API funcionando 🚀");
 });
 
-/* =========================
-   4️⃣ CONEXIÓN MONGODB
-========================= */
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {

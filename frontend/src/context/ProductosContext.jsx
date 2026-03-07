@@ -1,5 +1,4 @@
 import { createContext, useState, useEffect } from "react";
-
 import { API_URL } from "../config/api";
 import { useRealtimeVersion } from "./RealtimeContext";
 
@@ -9,8 +8,6 @@ export function ProductosProvider({ children }) {
   const [productos, setProductos] = useState([]);
   const realtimeVersion = useRealtimeVersion();
 
-
-  // Cargar productos
   const cargarProductos = async () => {
     try {
       const res = await fetch(`${API_URL}/productos`);
@@ -35,8 +32,6 @@ export function ProductosProvider({ children }) {
       });
 
       if (!res.ok) throw new Error("Error al agregar producto");
-
-      
     } catch (error) {
       console.error(error);
     }
@@ -51,8 +46,6 @@ export function ProductosProvider({ children }) {
       });
 
       if (!res.ok) throw new Error("Error al actualizar producto");
-
-      
     } catch (error) {
       console.error(error);
     }

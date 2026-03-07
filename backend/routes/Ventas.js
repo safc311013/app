@@ -251,7 +251,6 @@ router.get("/rango", verificarToken, adminOSupervisor, async (req, res) => {
   }
 });
 
-
 /* =========================
    VENTAS DE HOY
 ========================= */
@@ -292,4 +291,3 @@ router.get("/por-usuario/:id", verificarToken, adminOSupervisor, async (req, res
 });
 
 export default router;
-

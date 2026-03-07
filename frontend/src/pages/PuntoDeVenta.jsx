@@ -15,6 +15,7 @@ export default function PuntoDeVenta() {
   const [usuario, setUsuario] = useState(null);
   const [sugerencias, setSugerencias] = useState([]);
   const realtimeVersion = useRealtimeVersion();
+
   const codigoRef = useRef(null);
   const cantidadRef = useRef(null);
 
@@ -28,6 +29,7 @@ export default function PuntoDeVenta() {
       setUsuario(JSON.parse(usuarioGuardado));
     }
   }, [navigate]);
+
 
   useEffect(() => {
     setSugerencias([]);
@@ -245,6 +247,25 @@ export default function PuntoDeVenta() {
         >
           Agregar
         </button>
+
+        {/* SUGERENCIAS */}
+        {sugerencias.length > 0 && (
+          <div className="absolute left-6 right-40 top-[70px] bg-white border rounded shadow z-20 max-h-40 overflow-y-auto">
+            {sugerencias.map((s, i) => (
+              <div
+                key={i}
+                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                onClick={() => {
+                  setCodigo(s);
+                  setSugerencias([]);
+                  setTimeout(() => cantidadRef.current.focus(), 50);
+                }}
+              >
+                {s}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* CARRITO */}
@@ -282,10 +303,7 @@ export default function PuntoDeVenta() {
                   max={item.stock}
                   value={item.cantidad}
                   onChange={(e) =>
-                    actualizarCantidad(
-                      item,
-                      Number(e.target.value)
-                    )
+                    actualizarCantidad(item, Number(e.target.value))
                   }
                   className="w-full text-center outline-none"
                 />
@@ -304,7 +322,7 @@ export default function PuntoDeVenta() {
             {/* DESCUENTO */}
             <div className="flex flex-col w-28">
               <label className="text-xs font-semibold mb-1">
-                Descuento (%)
+                Descuento %
               </label>
 
               <input
@@ -312,38 +330,21 @@ export default function PuntoDeVenta() {
                 min="0"
                 max="100"
                 value={item.descuento}
-                placeholder="%"
-                onChange={(e) => {
-                  let valor = e.target.value;
-
-                  if (valor === "") {
-                    setCarrito(
-                      carrito.map((p) =>
-                        p._id === item._id
-                          ? { ...p, descuento: "" }
-                          : p
-                      )
-                    );
-                    return;
-                  }
-
-                  valor = Number(valor);
-                  if (valor < 0) valor = 0;
-                  if (valor > 100) valor = 100;
-
+                onChange={(e) =>
                   setCarrito(
                     carrito.map((p) =>
                       p._id === item._id
-                        ? { ...p, descuento: valor }
+                        ? { ...p, descuento: e.target.value }
                         : p
                     )
-                  );
-                }}
+                  )
+                }
                 className="border p-1 rounded text-center"
               />
             </div>
 
-            <span className="font-semibold">
+            {/* SUBTOTAL */}
+            <span className="w-28 text-right font-semibold text-green-600">
               $
               {(
                 item.precioVenta *
@@ -352,45 +353,43 @@ export default function PuntoDeVenta() {
               ).toFixed(2)}
             </span>
 
+            {/* ELIMINAR */}
             <button
               onClick={() =>
-                setCarrito(
-                  carrito.filter((p) => p._id !== item._id)
-                )
+                setCarrito(carrito.filter((p) => p._id !== item._id))
               }
-              className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+              className="text-red-500 hover:underline text-sm"
             >
-              X
+              Quitar
             </button>
           </div>
         ))}
 
         <hr className="my-4" />
 
-        <div className="flex justify-between font-bold text-xl">
-          <span>Total:</span>
-          <span>${total.toFixed(2)}</span>
-        </div>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <label className="font-semibold">Método de Pago:</label>
+            <select
+              value={metodoPago}
+              onChange={(e) => setMetodoPago(e.target.value)}
+              className="border p-2 rounded"
+            >
+              <option>Efectivo</option>
+              <option>Tarjeta</option>
+              <option>Transferencia</option>
+              <option>Mixto</option>
+            </select>
+          </div>
 
-        <div className="mt-4">
-          <label className="block mb-2 font-semibold">
-            Método de Pago
-          </label>
-
-          <select
-            value={metodoPago}
-            onChange={(e) => setMetodoPago(e.target.value)}
-            className="border p-2 rounded w-full"
-          >
-            <option value="Efectivo">Efectivo</option>
-            <option value="Transferencia">Transferencia</option>
-            <option value="Tarjeta">Tarjeta</option>
-          </select>
+          <h3 className="text-2xl font-bold">
+            Total: <span className="text-green-600">${total.toFixed(2)}</span>
+          </h3>
         </div>
 
         <button
           onClick={finalizarVenta}
-          className="mt-4 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
+          className="mt-6 w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 text-lg font-semibold"
         >
           Finalizar Venta
         </button>

@@ -15,12 +15,10 @@ import Ventas from "./pages/Ventas";
 import { ProductosProvider } from "./context/ProductosContext";
 import { RealtimeProvider, useRealtimeStatus } from "./context/RealtimeContext";
 
-
 function RutaProtegida({ children }) {
   const token = localStorage.getItem("token");
   return token ? children : <Navigate to="/login" />;
 }
-
 
 function RutaPorRol({ children, rolesPermitidos }) {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -30,9 +28,6 @@ function RutaPorRol({ children, rolesPermitidos }) {
   return children;
 }
 
-/* =========================
-   🏗 LAYOUT PRINCIPAL
-========================= */
 function InstallPwaButton() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
@@ -65,7 +60,6 @@ function InstallPwaButton() {
   );
 }
 
-
 function RealtimeIndicator() {
   const connected = useRealtimeStatus();
 
@@ -79,7 +73,6 @@ function RealtimeIndicator() {
     </span>
   );
 }
-
 
 function Layout({ setUsuario }) {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -146,9 +139,6 @@ function Layout({ setUsuario }) {
           menuAbierto ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
-
-
-        
         <div className="mb-8 flex justify-center">
           <img src="/logo.png" alt="Logo" className="h-20 object-contain" />
         </div>
@@ -170,9 +160,7 @@ function Layout({ setUsuario }) {
               onClick={() => setMenuAbierto(false)}
               className={({ isActive }) =>
                 `relative block px-4 py-2 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                  isActive ? "bg-blue-600 text-white shadow-md" : "text-gray-300 hover:bg-gray-700 hover:text-white"
                 }`
               }
             >
@@ -201,7 +189,8 @@ function Layout({ setUsuario }) {
       </aside>
 
       <main className="md:ml-64 min-h-screen overflow-y-auto p-4 md:p-8">
-        <Route path="/" element={<RutaPorRol rolesPermitidos={["admin", "supervisor"]}><Dashboard /></RutaPorRol>} />
+        <Routes>
+          <Route path="/" element={<RutaPorRol rolesPermitidos={["admin", "supervisor"]}><Dashboard /></RutaPorRol>} />
           <Route path="/inventario" element={<RutaPorRol rolesPermitidos={["admin", "supervisor"]}><Inventario /></RutaPorRol>} />
           <Route path="/artesanos" element={<RutaPorRol rolesPermitidos={["admin", "supervisor"]}><Artesanos /></RutaPorRol>} />
           <Route path="/pos" element={<RutaPorRol rolesPermitidos={["admin", "supervisor", "cajero"]}><POS /></RutaPorRol>} />
@@ -209,11 +198,11 @@ function Layout({ setUsuario }) {
           <Route path="/reportes" element={<RutaPorRol rolesPermitidos={["admin", "supervisor"]}><Reportes /></RutaPorRol>} />
           <Route path="/usuarios" element={<RutaPorRol rolesPermitidos={["admin"]}><Usuarios /></RutaPorRol>} />
           <Route path="/cotizaciones" element={<Cotizaciones />} />
+        </Routes>
       </main>
     </div>
   );
 }
-
 
 function App() {
   const [usuario, setUsuario] = useState(JSON.parse(localStorage.getItem("usuario")) || null);
