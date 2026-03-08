@@ -16,20 +16,63 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = ["http://localhost:5173", "https://app-hilos.netlify.app"];
 const sseClients = new Set();
 
+const frontendUrl = process.env.FRONTEND_URL?.trim();
+const vercelFrontendUrl = process.env.VERCEL_FRONTEND_URL?.trim();
+
+const allowedOriginPatterns = [
+  /^http:\/\/localhost:\d+$/,
+  /^https:\/\/[a-z0-9-]+\.vercel\.app$/i,
+  /^https:\/\/[a-z0-9-]+\.netlify\.app$/i,
+  "https://app-hilos.netlify.app",
+  frontendUrl,
+  vercelFrontendUrl,
+].filter(Boolean);
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  const byRules = allowedOriginPatterns.some((rule) => {
+    if (typeof rule === "string") return rule === origin;
+    return rule.test(origin);
+  });
+
+  if (byRules) return true;
+
+  if (process.env.VERCEL === "1" && origin.startsWith("https://")) {
+    return true;
+  }
+
+  return false;
+};
+
 const emitRealtimeChange = (resource) => {
   const payload = `data: ${JSON.stringify({ resource, timestamp: Date.now() })}\n\n`;
-  sseClients.forEach((client) => client.write(payload));
+
+  sseClients.forEach((client) => {
+    try {
+      client.write(payload);
+    } catch {
+      sseClients.delete(client);
+    }
+  });
 };
 
 app.locals.emitRealtimeChange = emitRealtimeChange;
 
 app.use(
   cors({
-    origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   })
 );
+
+
 
 app.use(express.json());
 
@@ -123,11 +166,41 @@ app.get("/", (req, res) => {
 });
 
 mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("🟢 Conectado a MongoDB");
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-    });
-  })
-  .catch((err) => console.error("❌ Error MongoDB:", err));
+let mongoConnectionPromise;
+
+function connectMongo() {
+  if (mongoose.connection.readyState === 1) {
+    return Promise.resolve(mongoose.connection);
+  }
+
+  if (!mongoConnectionPromise) {
+    mongoConnectionPromise = mongoose
+      .connect(process.env.MONGO_URI, {
+        serverSelectionTimeoutMS: 10000,
+      })
+      .catch((error) => {
+        mongoConnectionPromise = undefined;
+        throw error;
+      });
+  }
+
+  return mongoConnectionPromise;
+}
+
+if (process.env.VERCEL !== "1") {
+  connectMongo()
+    .then(() => {
+      console.log("🟢 Conectado a MongoDB");
+      app.listen(PORT, () => {
+        console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+      });
+    })
+    .catch((err) => console.error("❌ Error MongoDB:", err));
+}
+
+app.use((err, req, res, next) => {
+  console.error("❌ Error no controlado:", err);
+  res.status(500).json({ message: "Error interno del servidor", error: err.message });
+});
+
+export { app, connectMongo };
