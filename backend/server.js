@@ -81,7 +81,7 @@ app.use(express.json());
    Realtime SSE
 ------------------------- */
 
-app.get("/api/realtime/events", (req, res) => {
+app.get("/api/realtime/events", async (req, res) => {
   const token = req.query.token;
 
   if (!token) {
@@ -90,8 +90,12 @@ app.get("/api/realtime/events", (req, res) => {
 
   try {
     jwt.verify(token, process.env.JWT_SECRET);
-  } catch {
-    return res.status(401).json({ message: "Token inválido" });
+    await connectMongo();
+  } catch (error) {
+    return res.status(401).json({
+      message: "Token inválido o error de conexión",
+      error: error.message,
+    });
   }
 
   res.setHeader("Content-Type", "text/event-stream");
@@ -116,6 +120,44 @@ app.get("/api/realtime/events", (req, res) => {
     clearInterval(heartbeat);
     sseClients.delete(res);
   });
+});
+
+/* -------------------------
+   Rutas de prueba
+------------------------- */
+
+app.get("/", (req, res) => {
+  res.send("API funcionando 🚀");
+});
+
+app.get("/api/test", async (req, res) => {
+  try {
+    await connectMongo();
+    res.json({ ok: true, message: "Ruta api funcionando" });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      message: "Error conectando a la base de datos",
+      error: error.message,
+    });
+  }
+});
+
+/* -------------------------
+   Middleware conexión Mongo
+   para rutas API
+------------------------- */
+
+app.use("/api", async (req, res, next) => {
+  try {
+    await connectMongo();
+    next();
+  } catch (error) {
+    res.status(500).json({
+      message: "Error conectando a la base de datos",
+      error: error.message,
+    });
+  }
 });
 
 /* -------------------------
@@ -192,14 +234,6 @@ app.get("/api/productos/stock-bajo", async (req, res) => {
 });
 
 /* -------------------------
-   Ruta raíz
-------------------------- */
-
-app.get("/", (req, res) => {
-  res.send("API funcionando 🚀");
-});
-
-/* -------------------------
    Conexión MongoDB
 ------------------------- */
 
@@ -208,6 +242,10 @@ let mongoConnectionPromise;
 function connectMongo() {
   if (mongoose.connection.readyState === 1) {
     return Promise.resolve(mongoose.connection);
+  }
+
+  if (mongoose.connection.readyState === 2) {
+    return mongoConnectionPromise;
   }
 
   const mongoUri = process.env.MONGODB_URI;
@@ -220,6 +258,9 @@ function connectMongo() {
     mongoConnectionPromise = mongoose
       .connect(mongoUri, {
         serverSelectionTimeoutMS: 10000,
+      })
+      .then((connection) => {
+        return connection;
       })
       .catch((error) => {
         mongoConnectionPromise = undefined;
@@ -255,3 +296,4 @@ app.use((err, req, res, next) => {
 });
 
 export { app, connectMongo };
+export default app;
