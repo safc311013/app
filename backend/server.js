@@ -13,7 +13,7 @@ import usuariosRoutes from "./routes/usuarios.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const allowedOrigins = ["http://localhost:5173", "https://app-hilos.netlify.app"];
+
 const sseClients = new Set();
 
 const frontendUrl = process.env.FRONTEND_URL?.trim();
@@ -46,7 +46,10 @@ const isAllowedOrigin = (origin) => {
 };
 
 const emitRealtimeChange = (resource) => {
-  const payload = `data: ${JSON.stringify({ resource, timestamp: Date.now() })}\n\n`;
+  const payload = `data: ${JSON.stringify({
+    resource,
+    timestamp: Date.now(),
+  })}\n\n`;
 
   sseClients.forEach((client) => {
     try {
@@ -72,9 +75,11 @@ app.use(
   })
 );
 
-
-
 app.use(express.json());
+
+/* -------------------------
+   Realtime SSE
+------------------------- */
 
 app.get("/api/realtime/events", (req, res) => {
   const token = req.query.token;
@@ -98,7 +103,13 @@ app.get("/api/realtime/events", (req, res) => {
     res.write(`: heartbeat ${Date.now()}\n\n`);
   }, 25000);
 
-  res.write(`data: ${JSON.stringify({ resource: "init", timestamp: Date.now() })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({
+      resource: "init",
+      timestamp: Date.now(),
+    })}\n\n`
+  );
+
   sseClients.add(res);
 
   req.on("close", () => {
@@ -107,9 +118,17 @@ app.get("/api/realtime/events", (req, res) => {
   });
 });
 
+/* -------------------------
+   Rutas API
+------------------------- */
+
 app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/ventas", ventasRoutes);
+
+/* -------------------------
+   Productos
+------------------------- */
 
 app.get("/api/productos", async (req, res) => {
   try {
@@ -124,7 +143,9 @@ app.post("/api/productos", async (req, res) => {
   try {
     const nuevoProducto = new Producto(req.body);
     const guardado = await nuevoProducto.save();
+
     emitRealtimeChange("productos");
+
     res.json(guardado);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -133,8 +154,14 @@ app.post("/api/productos", async (req, res) => {
 
 app.put("/api/productos/:id", async (req, res) => {
   try {
-    const productoActualizado = await Producto.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const productoActualizado = await Producto.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
     emitRealtimeChange("productos");
+
     res.json(productoActualizado);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -144,7 +171,9 @@ app.put("/api/productos/:id", async (req, res) => {
 app.delete("/api/productos/:id", async (req, res) => {
   try {
     await Producto.findByIdAndDelete(req.params.id);
+
     emitRealtimeChange("productos");
+
     res.json({ mensaje: "Producto eliminado" });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -155,16 +184,24 @@ app.get("/api/productos/stock-bajo", async (req, res) => {
   try {
     const limite = 3;
     const productos = await Producto.find({ stock: { $lte: limite } });
+
     res.json(productos);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+/* -------------------------
+   Ruta raíz
+------------------------- */
+
 app.get("/", (req, res) => {
   res.send("API funcionando 🚀");
 });
 
+/* -------------------------
+   Conexión MongoDB
+------------------------- */
 
 let mongoConnectionPromise;
 
@@ -176,7 +213,7 @@ function connectMongo() {
   const mongoUri = process.env.MONGODB_URI;
 
   if (!mongoUri) {
-    throw new Error("MONGODB_URI no está configurado");
+    throw new Error("MONGODB_URI no está configurado en las variables de entorno");
   }
 
   if (!mongoConnectionPromise) {
@@ -197,6 +234,7 @@ if (process.env.VERCEL !== "1") {
   connectMongo()
     .then(() => {
       console.log("🟢 Conectado a MongoDB");
+
       app.listen(PORT, () => {
         console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
       });
@@ -204,9 +242,16 @@ if (process.env.VERCEL !== "1") {
     .catch((err) => console.error("❌ Error MongoDB:", err));
 }
 
+/* -------------------------
+   Manejo de errores
+------------------------- */
+
 app.use((err, req, res, next) => {
   console.error("❌ Error no controlado:", err);
-  res.status(500).json({ message: "Error interno del servidor", error: err.message });
+  res.status(500).json({
+    message: "Error interno del servidor",
+    error: err.message,
+  });
 });
 
 export { app, connectMongo };
