@@ -29,16 +29,21 @@ router.post("/", verificarToken, adminOSupervisor, async (req, res) => {
       return res.status(400).json({ message: "Nombre, email y password son obligatorios" });
     }
 
-    email = email.toLowerCase();
+    email = email.toLowerCase().trim();
+    nombre = nombre.trim();
+
     const rolesValidos = ["admin", "supervisor", "cajero"];
     if (rol && !rolesValidos.includes(rol)) {
       return res.status(400).json({ message: "Rol inválido" });
     }
 
     const existe = await Usuario.findOne({ email });
-    if (existe) return res.status(400).json({ message: "El email ya está registrado" });
+    if (existe) {
+      return res.status(400).json({ message: "El email ya está registrado" });
+    }
 
     const passwordHash = await bcrypt.hash(password, 10);
+
     const nuevoUsuario = await Usuario.create({
       nombre,
       email,
@@ -65,16 +70,19 @@ router.put("/:id", verificarToken, soloAdmin, async (req, res) => {
     const { nombre, email, rol, password } = req.body;
     const usuario = await Usuario.findById(req.params.id);
 
-    if (!usuario) return res.status(404).json({ message: "Usuario no encontrado" });
+    if (!usuario) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
 
     const rolesValidos = ["admin", "supervisor", "cajero"];
     if (rol && !rolesValidos.includes(rol)) {
       return res.status(400).json({ message: "Rol inválido" });
     }
 
-    if (nombre) usuario.nombre = nombre;
-    if (email) usuario.email = email.toLowerCase();
+    if (nombre) usuario.nombre = nombre.trim();
+    if (email) usuario.email = email.toLowerCase().trim();
     if (rol) usuario.rol = rol;
+
     if (password && password.trim() !== "") {
       const passwordHash = await bcrypt.hash(password, 10);
       usuario.password = passwordHash;
@@ -99,7 +107,10 @@ router.put("/:id", verificarToken, soloAdmin, async (req, res) => {
 router.delete("/:id", verificarToken, soloAdmin, async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.params.id);
-    if (!usuario) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    if (!usuario) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
 
     if (usuario.rol === "admin") {
       const totalAdmins = await Usuario.countDocuments({ rol: "admin" });
@@ -109,6 +120,7 @@ router.delete("/:id", verificarToken, soloAdmin, async (req, res) => {
     }
 
     await Usuario.findByIdAndDelete(req.params.id);
+
     req.app.locals.emitRealtimeChange?.("usuarios");
     res.json({ message: "Usuario eliminado correctamente" });
   } catch (error) {
