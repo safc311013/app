@@ -6,11 +6,17 @@ import { useRealtimeVersion } from "../context/RealtimeContext";
 function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loadingLista, setLoadingLista] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [nuevo, setNuevo] = useState({ nombre: "", email: "", password: "", rol: "cajero" });
+  const [nuevo, setNuevo] = useState({
+    nombre: "",
+    email: "",
+    password: "",
+    rol: "cajero",
+  });
 
   const navigate = useNavigate();
   const realtimeVersion = useRealtimeVersion();
@@ -44,7 +50,7 @@ function Usuarios() {
 
   const obtenerUsuarios = useCallback(async () => {
     try {
-      setLoading(true);
+      setLoadingLista(true);
       setError("");
 
       const res = await fetchConToken(`${API_URL}/usuarios`);
@@ -61,7 +67,7 @@ function Usuarios() {
       setError(err.message || "Error al cargar usuarios");
       setUsuarios([]);
     } finally {
-      setLoading(false);
+      setLoadingLista(false);
     }
   }, [fetchConToken]);
 
@@ -97,7 +103,7 @@ function Usuarios() {
     }
 
     try {
-      setLoading(true);
+      setSubmitting(true);
 
       const res = await fetchConToken(`${API_URL}/usuarios`, {
         method: "POST",
@@ -114,12 +120,14 @@ function Usuarios() {
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   const actualizarUsuario = async (id) => {
     try {
+      setSubmitting(true);
+
       const payload = { ...editData };
       if (!payload.password) delete payload.password;
 
@@ -139,17 +147,22 @@ function Usuarios() {
       await obtenerUsuarios();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const eliminarUsuario = async (id) => {
     if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
+
     if (id === usuarioLogueado._id) {
       setError("No puedes eliminar tu propio usuario.");
       return;
     }
 
     try {
+      setSubmitting(true);
+
       const res = await fetchConToken(`${API_URL}/usuarios/${id}`, {
         method: "DELETE",
       });
@@ -162,12 +175,15 @@ function Usuarios() {
       await obtenerUsuarios();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-6">Administrar Usuarios</h1>
+
       {error && <p className="text-red-600 mb-4 font-semibold">{error}</p>}
 
       <form onSubmit={crearUsuario} className="mb-8 flex gap-3 flex-wrap">
@@ -205,14 +221,18 @@ function Usuarios() {
         </select>
         <button
           type="submit"
-          disabled={loading}
+          disabled={submitting}
           className="bg-green-600 text-white px-4 rounded hover:bg-green-700 transition disabled:opacity-50"
         >
-          {loading ? "Procesando..." : "Crear"}
+          {submitting ? "Procesando..." : "Crear"}
         </button>
       </form>
 
-      {loading && <p>Cargando...</p>}
+      {loadingLista && <p className="text-gray-500 mb-4">Cargando usuarios...</p>}
+
+      {!loadingLista && usuarios.length === 0 && (
+        <p className="text-gray-500">No hay usuarios registrados.</p>
+      )}
 
       <div className="space-y-3">
         {usuarios.map((u) => {
@@ -282,7 +302,7 @@ function Usuarios() {
                   <>
                     {isEditing ? (
                       <button
-                        disabled={!hasChanges}
+                        disabled={!hasChanges || submitting}
                         onClick={() => actualizarUsuario(u._id)}
                         className={`px-3 py-1 rounded text-white ${
                           hasChanges ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
@@ -311,7 +331,8 @@ function Usuarios() {
 
                     <button
                       onClick={() => eliminarUsuario(u._id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+                      disabled={submitting}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition disabled:opacity-50"
                     >
                       Eliminar
                     </button>
