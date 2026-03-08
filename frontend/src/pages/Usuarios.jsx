@@ -7,6 +7,7 @@ function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [error, setError] = useState("");
   const [loadingLista, setLoadingLista] = useState(true);
+  const [cargaInicialCompleta, setCargaInicialCompleta] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({});
@@ -48,28 +49,34 @@ function Usuarios() {
     [navigate]
   );
 
-  const obtenerUsuarios = useCallback(async () => {
-    try {
-      setLoadingLista(true);
-      setError("");
+  const obtenerUsuarios = useCallback(
+    async ({ silencioso = false } = {}) => {
+      try {
+        if (!silencioso && !cargaInicialCompleta) {
+          setLoadingLista(true);
+        }
 
-      const res = await fetchConToken(`${API_URL}/usuarios`);
-      if (!res) return;
+        setError("");
 
-      const data = await res.json();
+        const res = await fetchConToken(`${API_URL}/usuarios`);
+        if (!res) return;
 
-      if (!res.ok) {
-        throw new Error(data.message || "Error al obtener usuarios");
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || "Error al obtener usuarios");
+        }
+
+        setUsuarios(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setError(err.message || "Error al cargar usuarios");
+      } finally {
+        setLoadingLista(false);
+        setCargaInicialCompleta(true);
       }
-
-      setUsuarios(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(err.message || "Error al cargar usuarios");
-      setUsuarios([]);
-    } finally {
-      setLoadingLista(false);
-    }
-  }, [fetchConToken]);
+    },
+    [fetchConToken, cargaInicialCompleta]
+  );
 
   useEffect(() => {
     if (!usuarioLogueado || !token) {
@@ -77,8 +84,8 @@ function Usuarios() {
       return;
     }
 
-    obtenerUsuarios();
-  }, [navigate, obtenerUsuarios, realtimeVersion, usuarioLogueado, token]);
+    obtenerUsuarios({ silencioso: cargaInicialCompleta });
+  }, [navigate, obtenerUsuarios, realtimeVersion, usuarioLogueado, token, cargaInicialCompleta]);
 
   useEffect(() => {
     const handleEsc = (e) => {
@@ -116,7 +123,7 @@ function Usuarios() {
       if (!res.ok) throw new Error(data.message || "Error al crear usuario");
 
       setNuevo({ nombre: "", email: "", password: "", rol: "cajero" });
-      await obtenerUsuarios();
+      await obtenerUsuarios({ silencioso: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -144,7 +151,7 @@ function Usuarios() {
       setEditId(null);
       setEditData({});
       setShowPassword(false);
-      await obtenerUsuarios();
+      await obtenerUsuarios({ silencioso: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -155,7 +162,7 @@ function Usuarios() {
   const eliminarUsuario = async (id) => {
     if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
 
-    if (id === usuarioLogueado._id) {
+    if (id === usuarioLogueado?._id) {
       setError("No puedes eliminar tu propio usuario.");
       return;
     }
@@ -172,7 +179,7 @@ function Usuarios() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Error al eliminar usuario");
 
-      await obtenerUsuarios();
+      await obtenerUsuarios({ silencioso: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -228,13 +235,15 @@ function Usuarios() {
         </button>
       </form>
 
-      {loadingLista && <p className="text-gray-500 mb-4">Cargando usuarios...</p>}
-
-      {!loadingLista && usuarios.length === 0 && (
-        <p className="text-gray-500">No hay usuarios registrados.</p>
+      {loadingLista && !cargaInicialCompleta && (
+        <p className="text-gray-500 mb-4">Cargando usuarios...</p>
       )}
 
-      <div className="space-y-3">
+      {!loadingLista && usuarios.length === 0 && (
+        <p className="text-gray-500 mb-4">No hay usuarios registrados.</p>
+      )}
+
+      <div className="space-y-3 min-h-[220px]">
         {usuarios.map((u) => {
           const isEditing = editId === u._id;
           const hasChanges =
@@ -298,14 +307,16 @@ function Usuarios() {
               </div>
 
               <div className="flex gap-2">
-                {u._id !== usuarioLogueado._id && (
+                {u._id !== usuarioLogueado?._id && (
                   <>
                     {isEditing ? (
                       <button
                         disabled={!hasChanges || submitting}
                         onClick={() => actualizarUsuario(u._id)}
                         className={`px-3 py-1 rounded text-white ${
-                          hasChanges ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
+                          hasChanges
+                            ? "bg-blue-600 hover:bg-blue-700"
+                            : "bg-gray-400 cursor-not-allowed"
                         }`}
                       >
                         Guardar
