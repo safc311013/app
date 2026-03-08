@@ -165,7 +165,7 @@ app.get("/", (req, res) => {
   res.send("API funcionando 🚀");
 });
 
-mongoose
+
 let mongoConnectionPromise;
 
 function connectMongo() {
@@ -173,9 +173,15 @@ function connectMongo() {
     return Promise.resolve(mongoose.connection);
   }
 
+  const mongoUri = process.env.MONGODB_URI;
+
+  if (!mongoUri) {
+    throw new Error("MONGODB_URI no está configurado");
+  }
+
   if (!mongoConnectionPromise) {
     mongoConnectionPromise = mongoose
-      .connect(process.env.MONGO_URI, {
+      .connect(mongoUri, {
         serverSelectionTimeoutMS: 10000,
       })
       .catch((error) => {
