@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, NavLink } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Menu, X, Download } from "lucide-react";
 
@@ -17,13 +17,13 @@ import { RealtimeProvider, useRealtimeStatus } from "./context/RealtimeContext";
 
 function RutaProtegida({ children }) {
   const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/login" />;
+  return token ? children : <Navigate to="/login" replace />;
 }
 
 function RutaPorRol({ children, rolesPermitidos }) {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
   if (!usuario || !rolesPermitidos.includes(usuario.rol?.toLowerCase())) {
-    return <Navigate to="/pos" />;
+    return <Navigate to="/pos" replace />;
   }
   return children;
 }
@@ -189,16 +189,7 @@ function Layout({ setUsuario }) {
       </aside>
 
       <main className="md:ml-64 min-h-screen overflow-y-auto p-4 md:p-8">
-        <Routes>
-          <Route path="/" element={<RutaPorRol rolesPermitidos={["admin", "supervisor"]}><Dashboard /></RutaPorRol>} />
-          <Route path="/inventario" element={<RutaPorRol rolesPermitidos={["admin", "supervisor"]}><Inventario /></RutaPorRol>} />
-          <Route path="/artesanos" element={<RutaPorRol rolesPermitidos={["admin", "supervisor"]}><Artesanos /></RutaPorRol>} />
-          <Route path="/pos" element={<RutaPorRol rolesPermitidos={["admin", "supervisor", "cajero"]}><POS /></RutaPorRol>} />
-          <Route path="/ventas" element={<RutaPorRol rolesPermitidos={["admin", "supervisor"]}><Ventas /></RutaPorRol>} />
-          <Route path="/reportes" element={<RutaPorRol rolesPermitidos={["admin", "supervisor"]}><Reportes /></RutaPorRol>} />
-          <Route path="/usuarios" element={<RutaPorRol rolesPermitidos={["admin"]}><Usuarios /></RutaPorRol>} />
-          <Route path="/cotizaciones" element={<Cotizaciones />} />
-        </Routes>
+        <Outlet />
       </main>
     </div>
   );
@@ -213,14 +204,74 @@ function App() {
         <Router>
           <Routes>
             <Route path="/login" element={<Login setUsuario={setUsuario} />} />
+
             <Route
-              path="/*"
               element={
                 <RutaProtegida>
                   <Layout setUsuario={setUsuario} />
                 </RutaProtegida>
               }
-            />
+            >
+              <Route
+                path="/"
+                element={
+                  <RutaPorRol rolesPermitidos={["admin", "supervisor"]}>
+                    <Dashboard />
+                  </RutaPorRol>
+                }
+              />
+              <Route
+                path="/inventario"
+                element={
+                  <RutaPorRol rolesPermitidos={["admin", "supervisor"]}>
+                    <Inventario />
+                  </RutaPorRol>
+                }
+              />
+              <Route
+                path="/artesanos"
+                element={
+                  <RutaPorRol rolesPermitidos={["admin", "supervisor"]}>
+                    <Artesanos />
+                  </RutaPorRol>
+                }
+              />
+              <Route
+                path="/pos"
+                element={
+                  <RutaPorRol rolesPermitidos={["admin", "supervisor", "cajero"]}>
+                    <POS />
+                  </RutaPorRol>
+                }
+              />
+              <Route
+                path="/ventas"
+                element={
+                  <RutaPorRol rolesPermitidos={["admin", "supervisor"]}>
+                    <Ventas />
+                  </RutaPorRol>
+                }
+              />
+              <Route
+                path="/reportes"
+                element={
+                  <RutaPorRol rolesPermitidos={["admin", "supervisor"]}>
+                    <Reportes />
+                  </RutaPorRol>
+                }
+              />
+              <Route
+                path="/usuarios"
+                element={
+                  <RutaPorRol rolesPermitidos={["admin"]}>
+                    <Usuarios />
+                  </RutaPorRol>
+                }
+              />
+              <Route path="/cotizaciones" element={<Cotizaciones />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
       </ProductosProvider>
