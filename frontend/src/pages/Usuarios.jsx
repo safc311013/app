@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../config/api";
 import { useRealtimeVersion } from "../context/RealtimeContext";
@@ -12,12 +12,67 @@ function Usuarios() {
   const [showPassword, setShowPassword] = useState(false);
   const [nuevo, setNuevo] = useState({ nombre: "", email: "", password: "", rol: "cajero" });
 
-  const usuarioLogueado = JSON.parse(localStorage.getItem("usuario") || "null");
-  const token = localStorage.getItem("token");
   const navigate = useNavigate();
   const realtimeVersion = useRealtimeVersion();
 
- 
+  const usuarioLogueado = JSON.parse(localStorage.getItem("usuario") || "null");
+  const token = localStorage.getItem("token");
+
+  const fetchConToken = useCallback(
+    async (url, options = {}) => {
+      const tokenActual = localStorage.getItem("token");
+
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenActual}`,
+          ...(options.headers || {}),
+        },
+      });
+
+      if (res.status === 401) {
+        localStorage.clear();
+        navigate("/login");
+        return null;
+      }
+
+      return res;
+    },
+    [navigate]
+  );
+
+  const obtenerUsuarios = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const res = await fetchConToken(`${API_URL}/usuarios`);
+      if (!res) return;
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Error al obtener usuarios");
+      }
+
+      setUsuarios(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message || "Error al cargar usuarios");
+      setUsuarios([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchConToken]);
+
+  useEffect(() => {
+    if (!usuarioLogueado || !token) {
+      navigate("/login");
+      return;
+    }
+
+    obtenerUsuarios();
+  }, [navigate, obtenerUsuarios, realtimeVersion, usuarioLogueado, token]);
 
   useEffect(() => {
     const handleEsc = (e) => {
@@ -27,57 +82,35 @@ function Usuarios() {
         setShowPassword(false);
       }
     };
+
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
-  const fetchConToken = async (url, options = {}) => {
-    const res = await fetch(url, {
-      ...options,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) },
-    });
-    if (res.status === 401) {
-      localStorage.clear();
-      navigate("/login");
-      return null;
-    }
-    return res;
-  };
-
-  const obtenerUsuarios = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const res = await fetchConToken(`${API_URL}/usuarios`);
-      if (!res) return;
-      if (!res.ok) throw new Error((await res.json()).message || "Error al obtener usuarios");
-      const data = await res.json();
-      setUsuarios(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const crearUsuario = async (e) => {
     e.preventDefault();
     setError("");
+
     if (!nuevo.nombre.trim() || !nuevo.email.trim() || !nuevo.password.trim()) {
       setError("Todos los campos son obligatorios.");
       return;
     }
+
     try {
       setLoading(true);
+
       const res = await fetchConToken(`${API_URL}/usuarios`, {
         method: "POST",
         body: JSON.stringify(nuevo),
       });
+
       if (!res) return;
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Error al crear usuario");
+
       setNuevo({ nombre: "", email: "", password: "", rol: "cajero" });
-      obtenerUsuarios();
+      await obtenerUsuarios();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -94,14 +127,16 @@ function Usuarios() {
         method: "PUT",
         body: JSON.stringify(payload),
       });
+
       if (!res) return;
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Error al actualizar usuario");
 
       setEditId(null);
       setEditData({});
       setShowPassword(false);
-      obtenerUsuarios();
+      await obtenerUsuarios();
     } catch (err) {
       setError(err.message);
     }
@@ -109,12 +144,22 @@ function Usuarios() {
 
   const eliminarUsuario = async (id) => {
     if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
-    if (id === usuarioLogueado._id) return setError("No puedes eliminar tu propio usuario.");
+    if (id === usuarioLogueado._id) {
+      setError("No puedes eliminar tu propio usuario.");
+      return;
+    }
+
     try {
-      const res = await fetchConToken(`${API_URL}/usuarios/${id}`, { method: "DELETE" });
+      const res = await fetchConToken(`${API_URL}/usuarios/${id}`, {
+        method: "DELETE",
+      });
+
       if (!res) return;
-      if (!res.ok) throw new Error((await res.json()).message || "Error al eliminar usuario");
-      obtenerUsuarios();
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Error al eliminar usuario");
+
+      await obtenerUsuarios();
     } catch (err) {
       setError(err.message);
     }
@@ -125,39 +170,99 @@ function Usuarios() {
       <h1 className="text-2xl font-bold mb-6">Administrar Usuarios</h1>
       {error && <p className="text-red-600 mb-4 font-semibold">{error}</p>}
 
-      {/* FORM CREAR USUARIO */}
       <form onSubmit={crearUsuario} className="mb-8 flex gap-3 flex-wrap">
-        <input placeholder="Nombre" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} className="border p-2 rounded" required />
-        <input placeholder="Email" type="email" value={nuevo.email} onChange={(e) => setNuevo({ ...nuevo, email: e.target.value })} className="border p-2 rounded" required />
-        <input placeholder="Contraseña" type="password" value={nuevo.password} onChange={(e) => setNuevo({ ...nuevo, password: e.target.value })} className="border p-2 rounded" required />
-        <select value={nuevo.rol} onChange={(e) => setNuevo({ ...nuevo, rol: e.target.value })} className="border p-2 rounded">
+        <input
+          placeholder="Nombre"
+          value={nuevo.nombre}
+          onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })}
+          className="border p-2 rounded"
+          required
+        />
+        <input
+          placeholder="Email"
+          type="email"
+          value={nuevo.email}
+          onChange={(e) => setNuevo({ ...nuevo, email: e.target.value })}
+          className="border p-2 rounded"
+          required
+        />
+        <input
+          placeholder="Contraseña"
+          type="password"
+          value={nuevo.password}
+          onChange={(e) => setNuevo({ ...nuevo, password: e.target.value })}
+          className="border p-2 rounded"
+          required
+        />
+        <select
+          value={nuevo.rol}
+          onChange={(e) => setNuevo({ ...nuevo, rol: e.target.value })}
+          className="border p-2 rounded"
+        >
           <option value="cajero">Usuario</option>
           <option value="supervisor">Supervisor</option>
           <option value="admin">Admin</option>
         </select>
-        <button type="submit" disabled={loading} className="bg-green-600 text-white px-4 rounded hover:bg-green-700 transition disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-green-600 text-white px-4 rounded hover:bg-green-700 transition disabled:opacity-50"
+        >
           {loading ? "Procesando..." : "Crear"}
         </button>
       </form>
 
-      {/* LISTA USUARIOS */}
       {loading && <p>Cargando...</p>}
+
       <div className="space-y-3">
         {usuarios.map((u) => {
           const isEditing = editId === u._id;
           const hasChanges =
             isEditing &&
-            (editData.nombre !== u.nombre || editData.email !== u.email || editData.rol !== u.rol || (editData.password && editData.password !== ""));
+            (editData.nombre !== u.nombre ||
+              editData.email !== u.email ||
+              editData.rol !== u.rol ||
+              (editData.password && editData.password !== ""));
+
           return (
-            <div key={u._id} className={`flex justify-between items-center border p-3 rounded transition-colors ${isEditing ? "bg-blue-50 border-blue-400" : "bg-white"}`}>
+            <div
+              key={u._id}
+              className={`flex justify-between items-center border p-3 rounded transition-colors ${
+                isEditing ? "bg-blue-50 border-blue-400" : "bg-white"
+              }`}
+            >
               <div className="flex gap-3 items-center">
                 {isEditing ? (
                   <>
-                    <input className="border-2 border-blue-400 p-1 rounded w-32" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} />
-                    <input className="border-2 border-blue-400 p-1 rounded w-40" value={editData.email} onChange={(e) => setEditData({ ...editData, email: e.target.value })} />
-                    <input type={showPassword ? "text" : "password"} placeholder="••••••" className="border-2 border-blue-400 p-1 rounded w-32" value={editData.password || ""} onChange={(e) => setEditData({ ...editData, password: e.target.value })} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="px-2 py-1 text-sm border rounded bg-gray-100">{showPassword ? "🙈" : "👁️"}</button>
-                    <select className="border-2 border-blue-400 p-1 rounded" value={editData.rol} onChange={(e) => setEditData({ ...editData, rol: e.target.value })}>
+                    <input
+                      className="border-2 border-blue-400 p-1 rounded w-32"
+                      value={editData.nombre}
+                      onChange={(e) => setEditData({ ...editData, nombre: e.target.value })}
+                    />
+                    <input
+                      className="border-2 border-blue-400 p-1 rounded w-40"
+                      value={editData.email}
+                      onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                    />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••"
+                      className="border-2 border-blue-400 p-1 rounded w-32"
+                      value={editData.password || ""}
+                      onChange={(e) => setEditData({ ...editData, password: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="px-2 py-1 text-sm border rounded bg-gray-100"
+                    >
+                      {showPassword ? "🙈" : "👁️"}
+                    </button>
+                    <select
+                      className="border-2 border-blue-400 p-1 rounded"
+                      value={editData.rol}
+                      onChange={(e) => setEditData({ ...editData, rol: e.target.value })}
+                    >
                       <option value="cajero">Usuario</option>
                       <option value="supervisor">Supervisor</option>
                       <option value="admin">Admin</option>
@@ -179,7 +284,9 @@ function Usuarios() {
                       <button
                         disabled={!hasChanges}
                         onClick={() => actualizarUsuario(u._id)}
-                        className={`px-3 py-1 rounded text-white ${hasChanges ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"}`}
+                        className={`px-3 py-1 rounded text-white ${
+                          hasChanges ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
+                        }`}
                       >
                         Guardar
                       </button>
@@ -187,7 +294,12 @@ function Usuarios() {
                       <button
                         onClick={() => {
                           setEditId(u._id);
-                          setEditData({ nombre: u.nombre, email: u.email, rol: u.rol, password: "" });
+                          setEditData({
+                            nombre: u.nombre,
+                            email: u.email,
+                            rol: u.rol,
+                            password: "",
+                          });
                           setShowPassword(false);
                         }}
                         className="px-1 py-1 text-yellow-500 hover:text-yellow-700 rounded transition"
@@ -196,6 +308,7 @@ function Usuarios() {
                         ✏️
                       </button>
                     )}
+
                     <button
                       onClick={() => eliminarUsuario(u._id)}
                       className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
