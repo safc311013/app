@@ -17,10 +17,7 @@ function Usuarios() {
   const navigate = useNavigate();
   const realtimeVersion = useRealtimeVersion();
 
-  useEffect(() => {
-    if (!usuarioLogueado || !token) navigate("/login");
-    obtenerUsuarios();
-  }, [realtimeVersion]);
+ 
 
   useEffect(() => {
     const handleEsc = (e) => {

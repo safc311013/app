@@ -8,6 +8,19 @@ const router = express.Router();
 /* =========================
    OBTENER USUARIOS (ADMIN O SUPERVISOR)
 ========================= */
+router.get("/", verificarToken, adminOSupervisor, async (req, res) => {
+  try {
+    const usuarios = await Usuario.find().select("-password").sort({ nombre: 1 });
+    res.json(usuarios);
+  } catch (error) {
+    console.error("Error GET usuarios:", error);
+    res.status(500).json({ message: "Error al obtener usuarios" });
+  }
+});
+
+/* =========================
+   CREAR USUARIO (ADMIN O SUPERVISOR)
+========================= */
 router.post("/", verificarToken, adminOSupervisor, async (req, res) => {
   try {
     let { nombre, email, password, rol } = req.body;
@@ -26,7 +39,12 @@ router.post("/", verificarToken, adminOSupervisor, async (req, res) => {
     if (existe) return res.status(400).json({ message: "El email ya está registrado" });
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const nuevoUsuario = await Usuario.create({ nombre, email, password: passwordHash, rol: rol || "cajero" });
+    const nuevoUsuario = await Usuario.create({
+      nombre,
+      email,
+      password: passwordHash,
+      rol: rol || "cajero",
+    });
 
     const usuarioSinPassword = nuevoUsuario.toObject();
     delete usuarioSinPassword.password;
@@ -49,11 +67,11 @@ router.put("/:id", verificarToken, soloAdmin, async (req, res) => {
 
     if (!usuario) return res.status(404).json({ message: "Usuario no encontrado" });
 
-    // Validación de rol
     const rolesValidos = ["admin", "supervisor", "cajero"];
-    if (rol && !rolesValidos.includes(rol)) return res.status(400).json({ message: "Rol inválido" });
+    if (rol && !rolesValidos.includes(rol)) {
+      return res.status(400).json({ message: "Rol inválido" });
+    }
 
-    // Actualizar campos solo si vienen
     if (nombre) usuario.nombre = nombre;
     if (email) usuario.email = email.toLowerCase();
     if (rol) usuario.rol = rol;
@@ -83,10 +101,11 @@ router.delete("/:id", verificarToken, soloAdmin, async (req, res) => {
     const usuario = await Usuario.findById(req.params.id);
     if (!usuario) return res.status(404).json({ message: "Usuario no encontrado" });
 
-    // NO permitir eliminar el último admin
     if (usuario.rol === "admin") {
       const totalAdmins = await Usuario.countDocuments({ rol: "admin" });
-      if (totalAdmins <= 1) return res.status(400).json({ message: "No puedes eliminar el último admin" });
+      if (totalAdmins <= 1) {
+        return res.status(400).json({ message: "No puedes eliminar el último admin" });
+      }
     }
 
     await Usuario.findByIdAndDelete(req.params.id);
